@@ -1,0 +1,86 @@
+﻿@page "/lista"
+@using AssistenteDeEnsino.Components.Player.Data
+@using System.Text.RegularExpressions
+@inject IVideoRepository VideoRepository
+@inject NavigationManager Navigation
+
+<style>
+    .video-card {
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        border-radius: 5px;
+        overflow: hidden;
+        transition: transform 0.2s;
+        cursor: pointer;
+    }
+
+        .video-card:hover {
+            transform: scale(1.05);
+        }
+
+        .video-card img {
+            width: 100%;
+            height: auto;
+        }
+
+        .video-card h5 {
+            padding: 10px;
+            text-align: center;
+        }
+</style>
+
+<div class="container">
+    <div class="row">
+        @if (isLoading)
+        {
+            <p>Loading videos...</p>
+        }
+        else
+        {
+            <h2>Minha coleção de vídeos</h2>
+            <hr />
+
+            @foreach (var video in videos)
+            {
+                <div class="col-md-4 mb-4">
+                    <NavLink href="@($"player/{video.Slug}")" class="nav-link">
+                        <div class="video-card card">
+                            <img class="card-img-top" src="@ObterCapa(video.Url)" alt="@video.Nome">
+                            <div style="min-height: 130px" class="card-body">
+                                <h5 style="font-size: 18px; color: #000 !important" class="card-title">@video.Nome</h5>
+                            </div>
+                        </div>
+                    </NavLink>
+                </div>
+            }
+        }
+    </div>
+</div>
+
+@code {
+    private IEnumerable<Video> videos;
+    private bool isLoading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        videos = await VideoRepository.GetAllAsync();
+        isLoading = false;
+    }
+
+    private string ObterCapa(string url)
+    {
+        Regex YouTubeIdRegex = new Regex(@"(?:youtube\.com\/(?:[^\/\n\s]+\/\S+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})", RegexOptions.Compiled);
+
+        var match = YouTubeIdRegex.Match(url);
+        if (match.Success)
+        {
+            return $"https://img.youtube.com/vi/{match.Groups[1].Value}/hqdefault.jpg";
+        }
+
+        return url;
+    }
+
+    private void NavigateToVideo(string videoId)
+    {
+        Navigation.NavigateTo($"/player/{videoId}");
+    }
+}
